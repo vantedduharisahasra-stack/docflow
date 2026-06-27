@@ -10,8 +10,6 @@ install_dependencies:
     - source .venv/bin/activate
     - pip install --upgrade pip
     - pip install -r requirements.txt
-  tags:
-    - shell
 
 # 2. Deploy or Start the application
 # This assumes you are running the app on a server where the runner has access
@@ -25,5 +23,3 @@ deploy_app:
     - echo "DocFlow is running on port 8501"
   only:
     - main
-  tags:
-    - shell
