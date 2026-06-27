@@ -1,0 +1,29 @@
+stages:
+  - setup
+  - deploy
+
+# 1. Install dependencies on the runner
+install_dependencies:
+  stage: setup
+  script:
+    - python3 -m venv .venv
+    - source .venv/bin/activate
+    - pip install --upgrade pip
+    - pip install -r requirements.txt
+  tags:
+    - shell
+
+# 2. Deploy or Start the application
+# This assumes you are running the app on a server where the runner has access
+deploy_app:
+  stage: deploy
+  script:
+    - echo "Starting DocFlow application..."
+    - source .venv/bin/activate
+    # Use 'nohup' to keep the app running in the background if this is a server
+    - nohup streamlit run docflow.py --server.port 8501 > app.log 2>&1 &
+    - echo "DocFlow is running on port 8501"
+  only:
+    - main
+  tags:
+    - shell
