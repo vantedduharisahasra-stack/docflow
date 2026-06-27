@@ -27,23 +27,23 @@ uploaded_file = st.file_uploader("Upload a PDF", type="pdf")
 if uploaded_file:
     with open("temp.pdf", "wb") as f:
         f.write(uploaded_file.getbuffer())
-    
+
     doc_content = process_pdf("temp.pdf")
-    
+
     query = st.text_input("Ask a question about the document:")
-    
+
     if query:
         # Prompt Engineering for Structured QA
         prompt = f"""
         You are an expert assistant. Use the following document content to answer the question.
-        
+
         Document:
         {doc_content[:15000]} # Truncate to fit context window
-        
+
         Question: {query}
-        
+
         Answer:"""
-        
+
         with st.spinner("DocFlow is thinking..."):
             response = llm(prompt, max_tokens=500)
             st.write(response['choices'][0]['text'])
