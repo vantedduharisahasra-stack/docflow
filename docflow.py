@@ -1,49 +1,47 @@
 import streamlit as st
 import pymupdf4llm
-from llama_cpp import Llama
+import google.generativeai as genai
 
-st.title("DocFlow: Lightweight Document QA")
+st.title("DocFlow: Document QA")
 
-# 1. Setup Local LLM (Update this path to your actual GGUF file)
-@st.cache_resource
-def load_llm():
-    return Llama(
-        model_path="models/model.gguf",
-        n_ctx=512,           # Keep the context small to save memory
-        n_gpu_layers=0,      # Disable GPU offloading to keep RAM usage predictable
-        use_mmap=True,
-        use_mlock=False,
-        verbose=False        # Suppress the massive log output that eats up terminal memory
-    )
-llm = load_llm()
+# Setup Gemini API
+# Note: st.secrets looks for a key named GEMINI_API_KEY
+# You will set this in the Streamlit Cloud Dashboard "Secrets"
+if "GEMINI_API_KEY" not in st.secrets:
+    st.error("Gemini API key not found in secrets! Please set it in your App Settings.")
+    st.stop()
 
-# 2. Extract Document Content
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+model = genai.GenerativeModel('gemini-1.5-flash')
+
+# Extract Document Content
 def process_pdf(pdf_path):
-    md_text = pymupdf4llm.to_markdown(pdf_path)
-    return md_text
+    return pymupdf4llm.to_markdown(pdf_path)
 
 uploaded_file = st.file_uploader("Upload a PDF", type="pdf")
 
 if uploaded_file:
+    # Save temporarily to process
     with open("temp.pdf", "wb") as f:
         f.write(uploaded_file.getbuffer())
 
     doc_content = process_pdf("temp.pdf")
-
     query = st.text_input("Ask a question about the document:")
 
     if query:
-        # Prompt Engineering for Structured QA
+        # Prompt Engineering
         prompt = f"""
         You are an expert assistant. Use the following document content to answer the question.
-
-        Document:
-        {doc_content[:15000]} # Truncate to fit context window
+        
+        Document Content:
+        {doc_content[:15000]}
 
         Question: {query}
-
-        Answer:"""
+        """
 
         with st.spinner("DocFlow is thinking..."):
-            response = llm(prompt, max_tokens=500)
-            st.write(response['choices'][0]['text'])
+            try:
+                response = model.generate_content(prompt)
+                st.write(response.text)
+            except Exception as e:
+                st.error(f"Error communicating with Gemini: {e}")
